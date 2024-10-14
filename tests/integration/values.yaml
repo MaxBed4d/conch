@@ -1,0 +1,18 @@
+# SPDX-FileCopyrightText: © 2024 Matt Williams <matt.williams@bristol.ac.uk>
+# SPDX-License-Identifier: MIT
+---
+config:
+  issuer: "http://localhost:8080/realms/conch"
+  platforms:
+    slurm.ai.example:
+      alias: "ai.example"
+      hostname: "ai.access.example.com"
+      proxy_jump: "login.example.com"
+    slurm.3.example:
+      alias: "3.example"
+      hostname: "3.access.example.com"
+      proxy_jump: "login.example.com"
+image:
+  registry: localhost
+  tag: latest
+log_level: debug

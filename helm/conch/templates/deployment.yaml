@@ -1,0 +1,68 @@
+---
+# SPDX-FileCopyrightText: © 2024 Matt Williams <matt.williams@bristol.ac.uk>
+# SPDX-License-Identifier: MIT
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: conch
+  labels:
+    {{- include "conch.labels" . | indent 4 }}
+spec:
+  {{- if .Values.replicas }}
+  replicas: {{ .Values.replicas }}
+  {{- end }}
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: conch
+  template:
+    metadata:
+      labels:
+        {{- include "conch.labels" . | indent 8 }}
+      annotations:
+        checksum/config: {{ pick (include (print $.Template.BasePath "/configmap.yaml") . | fromYaml) "data" | toString | sha1sum }}  # restart if config changed
+    spec:
+      containers:
+        - name: conch
+          image: "{{ print .Values.image.registry "/" }}{{ required "image_name must be set" .Values.image.name }}:{{ default .Chart.AppVersion .Values.image.tag }}"
+          args: ["--port={{ .Values.port }}", "--config=/config/conch.toml"]
+          env:
+            - name: RUST_LOG
+              value: {{ .Values.log_level | quote }}
+          ports:
+            - containerPort: {{ .Values.port }}
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: {{ .Values.port }}
+          volumeMounts:
+            - mountPath: {{ required "signing_key_dir must be set" .Values.signing_key_dir | quote }}
+              name: "conch-signing-key-volume"
+              readOnly: true
+            - mountPath: "/config"
+              name: "conch-config-volume"
+              readOnly: true
+          resources:
+            requests:
+              cpu: "100m"
+              memory: "8Mi"
+            limits:
+              cpu: "500m"
+              memory: "64Mi"
+          securityContext:
+            readOnlyRootFilesystem: true
+            allowPrivilegeEscalation: false
+            runAsNonRoot: true
+            runAsUser: 65534
+            runAsGroup: 65534
+            capabilities:
+              drop:
+                - "ALL"
+              add:
+                - "NET_BIND_SERVICE"
+      volumes:
+          - name: "conch-signing-key-volume"
+            secret:
+              secretName: {{ .Values.ssh_signing_key_secret_name | quote }}
+          - name: "conch-config-volume"
+            configMap:
+              name: "conch-config"
