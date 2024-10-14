@@ -6,4 +6,4 @@ name: conch
 version: "0.0.0"  # Set by release script
 appVersion: ""  # Set by release script
 sources:
-  - https://github.com/MaxBed4d/conch/
+  - https://github.com/MaxBed4d/conch/tree/main
